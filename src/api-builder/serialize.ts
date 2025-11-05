@@ -1,4 +1,4 @@
-import { ResourceDef, getResource } from './registry';
+import {getResource } from './registry';
 
 export type FieldSelection = (string | { path: string; as?: string })[];
 export type Filters = Record<string, unknown>;

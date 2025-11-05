@@ -8,6 +8,7 @@ import AddFeature from "./pages/admin/AddFeature";
 import RoleMapping from "./pages/admin/RoleMapping";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
+import UserDashboard from "./pages/user/Dashboard";
 import {
   BrowserRouter as Router,
   Routes,
@@ -35,8 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { company, app } = getSlugsFromPathname(location.pathname);
 
   if (!isAuthenticated) {
-    const redirectTo =
-      company && app ? `/${company}/${app}/login` : `/`;
+    const redirectTo = company && app ? `/${company}/${app}/login` : `/`;
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
@@ -67,14 +67,46 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="/:company/:app/admin/dashboard/capabilities-add" element={<AddCapability />} />
-              <Route path="/:company/:app/admin/dashboard/add-feature" element={<AddFeature />} />
-              <Route path="/:company/:app/admin/dashboard/add-user" element={<AddUser />} />
-              <Route path="/:company/:app/admin/dashboard/roles-mapping" element={<RoleMapping />} />
+              <Route
+                path="/:company/:app/admin/dashboard/capabilities-add"
+                element={<AddCapability />}
+              />
+              <Route
+                path="/:company/:app/admin/dashboard/add-feature"
+                element={<AddFeature />}
+              />
+              <Route
+                path="/:company/:app/admin/dashboard/add-user"
+                element={<AddUser />}
+              />
+              <Route
+                path="/:company/:app/admin/dashboard/roles-mapping"
+                element={<RoleMapping />}
+              />
             </Route>
 
             {/* Company/App Selection */}
             <Route path="/select-company" element={<SelectCompany />} />
+
+            {/* Generic role-based dashboard (e.g. /:company/:app/salesman/dashboard or /:company/:app/manager/dashboard) */}
+            <Route
+              path="/:company/:app/:role/dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Also support the generic app-level dashboard (/:company/:app/dashboard) */}
+            <Route
+              path="/:company/:app/dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Root redirect to company selection */}
             <Route

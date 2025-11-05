@@ -12,7 +12,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import api from "../../utils/axiosConfig";
+import api, { buildPublicApiUrl } from "../../utils/axiosConfig";
 
 interface Company {
   id: number;
@@ -36,40 +36,49 @@ export default function SelectCompany() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
     const fetchCompanies = async () => {
       try {
-        // axios baseURL includes /api (see axiosConfig). Call the public
-        // companies endpoint relative to that baseURL.
-        const response = await api.get("/public/companies");
-        setCompanies(response.data);
+        const url = buildPublicApiUrl("/companies");
+        const response = await api.get(url);
+        if (!mounted) return;
+        setCompanies(response.data || []);
         setError(""); // Clear any previous errors
       } catch (err) {
         console.error("Error loading companies:", err);
+        if (!mounted) return;
         setError("Failed to load companies. Please try again.");
       }
     };
     fetchCompanies();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     const fetchApps = async () => {
       if (!selectedCompany) {
         setApps([]);
         return;
       }
       try {
-        // call apps endpoint relative to axios baseURL
-        const response = await api.get(
-          `/public/companies/${selectedCompany}/apps`
-        );
-        setApps(response.data);
+        const url = buildPublicApiUrl(`/companies/${selectedCompany}/apps`);
+        const response = await api.get(url);
+        if (!mounted) return;
+        setApps(response.data || []);
         setError(""); // Clear any previous errors
       } catch (err) {
         console.error("Error loading apps:", err);
+        if (!mounted) return;
         setError("Failed to load apps. Please try again.");
       }
     };
     fetchApps();
+    return () => {
+      mounted = false;
+    };
   }, [selectedCompany]);
 
   const handleSubmit = () => {

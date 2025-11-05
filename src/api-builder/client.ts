@@ -1,7 +1,8 @@
-import { buildSecurityHeaders } from './security';
+import { buildSecurityHeaders } from "./security";
+import { API_HOST } from "../utils/axiosConfig";
 
 type SendOpts = {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "DELETE";
   url: string;
   query?: string;
   body?: any;
@@ -13,15 +14,22 @@ type SendOpts = {
 
 class TimeoutError extends Error {
   constructor(message?: string) {
-    super(message || 'timeout');
-    this.name = 'TimeoutError';
+    super(message || "timeout");
+    this.name = "TimeoutError";
   }
 }
 
 export async function send(opts: SendOpts) {
   const timeoutMs = opts.timeoutMs ?? 5000;
   const maxRetries = opts.maxRetriesOnTimeout ?? 1;
-  const fullUrl = opts.query ? `${opts.url}${opts.url.includes('?') ? '&' : '?'}${opts.query}` : opts.url;
+  // Resolve relative API paths to the backend host (dev server vs API host)
+  const resolvedBase = opts.url.startsWith("http")
+    ? opts.url
+    : `${API_HOST}${opts.url.startsWith("/") ? "" : "/"}${opts.url}`;
+
+  const fullUrl = opts.query
+    ? `${resolvedBase}${resolvedBase.includes("?") ? "&" : "?"}${opts.query}`
+    : resolvedBase;
 
   let attempt = 0;
   while (true) {
@@ -29,8 +37,12 @@ export async function send(opts: SendOpts) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
 
-    const headers = buildSecurityHeaders({ token: opts.token, idempotencyKey: opts.idempotencyKey });
-    if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    const headers = buildSecurityHeaders({
+      token: opts.token,
+      idempotencyKey: opts.idempotencyKey,
+    });
+    if (opts.body && !headers["Content-Type"])
+      headers["Content-Type"] = "application/json";
 
     try {
       const res = await fetch(fullUrl, {
@@ -38,6 +50,8 @@ export async function send(opts: SendOpts) {
         headers,
         body: opts.body ? JSON.stringify(opts.body) : undefined,
         signal: controller.signal,
+        // include cookies for auth (matches axios withCredentials)
+        credentials: "include",
       });
       clearTimeout(id);
 
@@ -61,7 +75,8 @@ export async function send(opts: SendOpts) {
     } catch (err: any) {
       clearTimeout(id);
       // treat abort as timeout
-      const isTimeout = err && (err.name === 'AbortError' || err instanceof DOMException);
+      const isTimeout =
+        err && (err.name === "AbortError" || err instanceof DOMException);
       if (isTimeout && attempt <= maxRetries) {
         // retry only on timeout
         continue;

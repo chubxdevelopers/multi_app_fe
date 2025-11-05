@@ -15,6 +15,33 @@
         },
         "ops": ["get", "post", "put"]
       }
+    },
+    {
+      "name": "audio_recordings",
+      "endpoint": "/api/query/v1/base_resource",
+      "fields": [
+        "id",
+        "title",
+        "recorded_by",
+        "recorded_by_role",
+        "audio_url",
+        "audio_data",
+        "processed_audio",
+        "transcription",
+        "created_at",
+        "status",
+        "duration_seconds",
+        "company_id"
+      ],
+      "allowedOps": {
+        "filters": {
+          "id": ["eq", "in"],
+          "recorded_by": ["eq", "like"],
+          "status": ["eq", "in"],
+          "company_id": ["eq"]
+        },
+        "ops": ["get", "post", "put", "delete"]
+      }
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { getResource, ResourceDef } from './registry';
+import { getResource} from './registry';
 
 type FieldSelection = (string | { path: string; as?: string })[];
 
