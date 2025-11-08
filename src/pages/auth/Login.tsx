@@ -7,14 +7,12 @@ import {
   TextField,
   Typography,
   Alert,
-  Link,
 } from "@mui/material";
 import { useFormik } from "formik";
 import * as yup from "yup";
-import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api, { buildFullApiUrl } from "../../utils/axiosConfig";
 import { useAuth } from "../../contexts/AuthContext";
-import { Cookie } from "@mui/icons-material";
 
 const validationSchema = yup.object({
   email: yup
@@ -36,7 +34,6 @@ export default function Login() {
   // which the server treats as a company slug and returns "Company not found: auth".
   useEffect(() => {
     try {
-
       const parts = window.location.pathname.split("/").filter(Boolean);
 
       // Expect the path to be /:company/:app/... when scoped. If not present,
@@ -77,8 +74,12 @@ export default function Login() {
           const companySlug = parts[0];
           const appSlug = parts[1];
           login(response.data.token, response.data.user, companySlug, appSlug);
-          const dashboardRoute = response.data.dashboardRoute || `/${companySlug}/${appSlug}/admin/dashboard`;
-          navigate(dashboardRoute, { replace: true });
+          const dashboardRoute =
+            response.data.dashboardRoute ||
+            `/${companySlug}/${appSlug}/admin/dashboard`;
+          // Prefer the original 'from' route when available (keeps navigation semantics)
+          const target = dashboardRoute || from;
+          navigate(target, { replace: true });
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Login failed");
