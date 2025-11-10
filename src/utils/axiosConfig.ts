@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Build baseURL for multi-tenant requests
-export const API_HOST = import.meta.env.VITE_API_HOST || "http://localhost:4000";
+// Use Vite env var directly. Do not rely on process.env or hardcoded URLs.
+export const API_HOST = import.meta.env.VITE_API_HOST;
 
 // Extract company and app slugs from the URL path
 function extractSlugs() {
