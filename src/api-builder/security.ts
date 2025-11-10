@@ -11,7 +11,13 @@ function uuidv4(): string {
 }
 
 export function buildSecurityHeaders(opts?: { token?: string; idempotencyKey?: string; requestId?: string }) {
-  const token = opts?.token ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('auth.token') ?? undefined : undefined);
+  // Accept either 'token' or legacy 'auth.token' keys in localStorage so both
+  // the axios-based frontend and the fetch-based api-builder work.
+  const token =
+    opts?.token ??
+    (typeof localStorage !== 'undefined'
+      ? localStorage.getItem('token') ?? localStorage.getItem('auth.token') ?? undefined
+      : undefined);
   const headers: Record<string, string> = {
     'X-Resource-Version': getSchemaVersion(),
     'x-request-id': opts?.requestId ?? uuidv4(),
