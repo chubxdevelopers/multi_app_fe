@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Frontend Mobile",
+  "slug": "frontend-mobile-localdev",
+    "platforms": ["ios", "android", "web"],
+    "version": "1.0.0",
+    "sdkVersion": "48.0.0",
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "fallbackToCacheTimeout": 0
+    }
+  }
+}
