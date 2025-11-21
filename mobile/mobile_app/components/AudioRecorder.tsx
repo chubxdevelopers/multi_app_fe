@@ -11,6 +11,23 @@ interface AudioRecorderProps {
   onRecordingComplete?: (recording: any) => void;
 }
 
+// Use explicit high-quality 48k recording options to capture clearer audio
+const RECORDING_OPTIONS_HIGH_48K: any = {
+  android: {
+    extension: ".m4a",
+    // keep options minimal and compatible across Expo versions
+    sampleRate: 48000,
+    numberOfChannels: 1,
+    bitRate: 128000,
+  },
+  ios: {
+    extension: ".caf",
+    sampleRate: 48000,
+    numberOfChannels: 1,
+    bitRate: 128000,
+  },
+};
+
 export default function AudioRecorder({
   onRecordingComplete,
 }: AudioRecorderProps) {
@@ -30,16 +47,16 @@ export default function AudioRecorder({
             const status = await rec.getStatusAsync().catch(() => null);
             if (
               status &&
-              (status.isLoaded || status.isRecording || status.durationMillis)
+              (status.isRecording || status.durationMillis)
             ) {
               await rec.stopAndUnloadAsync();
             }
           } catch (e) {
             // ignore unload errors
             console.debug(
-              "AudioRecorder cleanup unload ignored:",
-              e?.message || e
-            );
+                "AudioRecorder cleanup unload ignored:",
+                (e as any)?.message || e
+              );
           }
         })();
       }
@@ -63,9 +80,7 @@ export default function AudioRecorder({
       });
 
       const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(
-        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
-      );
+      await rec.prepareToRecordAsync(RECORDING_OPTIONS_HIGH_48K);
       await rec.startAsync();
       recordingRef.current = rec;
       setRecording(rec);
@@ -84,14 +99,11 @@ export default function AudioRecorder({
       // stop and unload only if still recording/loaded
       try {
         const status = await rec.getStatusAsync().catch(() => null);
-        if (
-          status &&
-          (status.isLoaded || status.isRecording || status.durationMillis)
-        ) {
+        if (status && (status.isRecording || status.durationMillis)) {
           await rec.stopAndUnloadAsync();
         }
       } catch (e) {
-        console.debug("stopAndUnloadAsync ignored error:", e?.message || e);
+        console.debug("stopAndUnloadAsync ignored error:", (e as any)?.message || e);
       }
       const uri = rec.getURI();
       const recObj = {
@@ -121,6 +133,9 @@ export default function AudioRecorder({
       return;
     }
     setIsProcessing(true);
+    // derive lowercase path and mime early so fallbacks can use them
+    const lower = (lastUri || "").toLowerCase();
+    let mime = "audio/webm";
     try {
       // read file as base64 - be defensive around EncodingType availability
       let encodingOpt: any = "base64";
@@ -154,12 +169,12 @@ export default function AudioRecorder({
             let binary = "";
             for (let i = 0; i < uint8.length; i++)
               binary += String.fromCharCode(uint8[i]);
-            if (typeof global.btoa === "function") {
-              b64 = global.btoa(binary);
+            if (typeof (global as any).btoa === "function") {
+              b64 = (global as any).btoa(binary);
             } else {
               // Node Buffer fallback (shouldn't usually be available in RN)
               try {
-                b64 = (Buffer as any).from(binary, "binary").toString("base64");
+                b64 = (global as any).Buffer.from(binary, "binary").toString("base64");
               } catch (bufErr) {
                 throw readErr2;
               }
@@ -169,9 +184,7 @@ export default function AudioRecorder({
           }
         }
       }
-      // determine mime type from extension
-      const lower = lastUri.toLowerCase();
-      let mime = "audio/webm";
+      // determine mime type from extension (may override earlier guess)
       if (lower.endsWith(".m4a") || lower.endsWith(".mp4")) mime = "audio/mp4";
       else if (lower.endsWith(".wav")) mime = "audio/wav";
       else if (lower.endsWith(".mp3")) mime = "audio/mpeg";

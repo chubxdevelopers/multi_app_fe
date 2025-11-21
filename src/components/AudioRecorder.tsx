@@ -61,7 +61,8 @@ export default function AudioRecorder({
       origStreamRef.current = stream;
 
       // Create audio context and simple processing chain (gain + highpass)
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioCtx({ sampleRate: 48000 });
       audioContextRef.current = audioCtx;
 
@@ -73,7 +74,7 @@ export default function AudioRecorder({
       gainNode.gain.value = 1.5;
 
       const hp = audioCtx.createBiquadFilter();
-      hp.type = 'highpass';
+      hp.type = "highpass";
       hp.frequency.value = 120; // remove low rumble
 
       const dest = audioCtx.createMediaStreamDestination();
@@ -191,7 +192,7 @@ export default function AudioRecorder({
       });
 
       setSuccess("Recording saved successfully!");
-  
+
       setAudioBlob(null);
       setRecordingTime(0);
 
