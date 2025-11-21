@@ -191,7 +191,7 @@ export default function AudioRecorder({
       });
 
       setSuccess("Recording saved successfully!");
-      setTitle("");
+  
       setAudioBlob(null);
       setRecordingTime(0);
 
@@ -208,12 +208,7 @@ export default function AudioRecorder({
 
   return (
     <Box>
-      {speechSupported === false && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Live transcription is not supported in this browser. Transcription
-          will be processed later (if available on the server).
-        </Alert>
-      )}
+      {/* Realtime transcription removed; server-side transcription will be used if available. */}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
