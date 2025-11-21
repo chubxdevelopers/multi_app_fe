@@ -48,6 +48,14 @@ export default function AudioRecorder({
       setError("");
       setSuccess("");
       setTranscription("");
+      // Ensure getUserMedia is available (must be served over HTTPS or localhost)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError(
+          "Microphone access is not available. Open the app on https or localhost and ensure your browser supports getUserMedia."
+        );
+        console.error("navigator.mediaDevices.getUserMedia is not available");
+        return;
+      }
 
       const constraints: MediaStreamConstraints = {
         audio: {
@@ -59,7 +67,23 @@ export default function AudioRecorder({
         } as any,
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (getErr: any) {
+        // Provide a clearer message for permission or insecure-context errors
+        console.error("getUserMedia error:", getErr);
+        if (getErr && getErr.name === "NotAllowedError") {
+          setError("Microphone permission denied. Please allow microphone access in your browser.");
+        } else if (getErr && getErr.name === "NotFoundError") {
+          setError("No microphone found. Please attach a microphone and try again.");
+        } else if (getErr && getErr.message && getErr.message.includes("Only secure origins are allowed")) {
+          setError("Microphone access requires a secure context (https) or localhost. Open the app at http://localhost:5173 or use https.");
+        } else {
+          setError("Failed to access microphone. Please grant permission or check your browser settings.");
+        }
+        return;
+      }
       origStreamRef.current = stream;
 
       // Create audio context and simple processing chain (gain + highpass)

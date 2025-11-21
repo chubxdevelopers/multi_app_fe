@@ -1,15 +1,32 @@
 import axios from "axios";
 
-// Build baseURL for multi-tenant requests
-// Force API requests to use the current origin to avoid calls going to a
-// stale or misconfigured build-time host (e.g. trycloudflare) which produced
-// 404/network errors in your environment. If you intentionally host the API
-// on a separate domain, set up a proper reverse proxy or update this code.
-const forcedOrigin =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost:4000";
-export const API_HOST = forcedOrigin.replace(/\/$/, "");
+// Determine API host for requests.
+// Priority:
+// 1. `import.meta.env.VITE_API_HOST` (set in Vite or environment)
+// 2. If running under Vite dev server (default port 5173), assume backend
+//    is at `http://localhost:4000` to avoid requests going to the dev server.
+// 3. Otherwise use the current page origin.
+let configuredHost: string | null = null;
+try {
+  // Vite exposes env via import.meta.env
+  // @ts-ignore
+  configuredHost = (import.meta && import.meta.env && import.meta.env.VITE_API_HOST) || null;
+} catch (e) {
+  configuredHost = null;
+}
+
+const forcedOrigin = (() => {
+  if (configuredHost) return configuredHost;
+  if (typeof window !== "undefined") {
+    // If running the frontend via Vite (default port 5173), default API to localhost:4000
+    const port = window.location.port;
+    if (port === "5173") return "http://localhost:4000";
+    return window.location.origin;
+  }
+  return "http://localhost:4000";
+})();
+
+export const API_HOST = ("" + forcedOrigin).replace(/\/$/, "");
 
 // Extract company and app slugs from the URL path
 function extractSlugs() {
