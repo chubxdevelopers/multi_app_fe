@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiPost } from "../../shared/services/apiClient";
+import { apiPost } from "../../../shared/services/apiClient";
 
 type AudioRecord = {
   id: number;
