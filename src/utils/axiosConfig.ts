@@ -1,8 +1,13 @@
 import axios from "axios";
 
 // Build baseURL for multi-tenant requests
-// Use Vite env var directly. Do not rely on process.env or hardcoded URLs.
-export const API_HOST = import.meta.env.VITE_API_HOST;
+// Prefer Vite env var, but fall back to the current origin so the app works
+// when VITE_API_HOST is not set (prevents requests to invalid hosts).
+const rawApiHost = import.meta.env.VITE_API_HOST || "";
+export const API_HOST = (rawApiHost || (typeof window !== "undefined" ? window.location.origin : "http://localhost:4000")).replace(/\/$/, "");
+if (!rawApiHost) {
+  console.warn("VITE_API_HOST not set — using window.location.origin as API_HOST:", API_HOST);
+}
 
 // Extract company and app slugs from the URL path
 function extractSlugs() {
