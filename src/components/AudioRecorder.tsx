@@ -32,12 +32,14 @@ export default function AudioRecorder({
   const [success, setSuccess] = useState("");
   const [recordingTime, setRecordingTime] = useState(0);
   const [transcription, setTranscription] = useState("");
-  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const destRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const origStreamRef = useRef<MediaStream | null>(null);
 
   const startRecording = async () => {
     try {
@@ -45,51 +47,48 @@ export default function AudioRecorder({
       setSuccess("");
       setTranscription("");
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const constraints: MediaStreamConstraints = {
+        audio: {
+          autoGainControl: false,
+          noiseSuppression: false,
+          echoCancellation: false,
+          channelCount: 1,
+          sampleRate: 48000,
+        } as any,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      origStreamRef.current = stream;
+
+      // Create audio context and simple processing chain (gain + highpass)
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioCtx({ sampleRate: 48000 });
+      audioContextRef.current = audioCtx;
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      sourceNodeRef.current = source;
+
+      const gainNode = audioCtx.createGain();
+      // Gentle boost; avoid aggressive gain to prevent clipping
+      gainNode.gain.value = 1.5;
+
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 120; // remove low rumble
+
+      const dest = audioCtx.createMediaStreamDestination();
+      destRef.current = dest;
+
+      // Connect chain: source -> gain -> highpass -> dest
+      source.connect(gainNode);
+      gainNode.connect(hp);
+      hp.connect(dest);
+
+      // Use the processed stream for MediaRecorder
+      const processedStream = dest.stream;
+      const mediaRecorder = new MediaRecorder(processedStream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
-      // Initialize Speech Recognition API
-      const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        setSpeechSupported(true);
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-
-        recognition.onresult = (event: any) => {
-          let interimTranscript = "";
-          let finalTranscript = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript + " ";
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-
-          if (finalTranscript) {
-            setTranscription((prev) => prev + finalTranscript);
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error:", event.error);
-        };
-
-        recognition.start();
-        recognitionRef.current = recognition;
-      } else {
-        console.warn("Speech Recognition API not supported in this browser");
-        setSpeechSupported(false);
-      }
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -102,13 +101,16 @@ export default function AudioRecorder({
           type: "audio/webm",
         });
         setAudioBlob(audioBlob);
-        stream.getTracks().forEach((track) => track.stop());
+        // stop original tracks
+        try {
+          origStreamRef.current?.getTracks().forEach((track) => track.stop());
+        } catch (e) {}
+        // close audio context
+        try {
+          audioContextRef.current?.close();
+        } catch (e) {}
         if (timerRef.current) {
           clearInterval(timerRef.current);
-        }
-        // Stop speech recognition
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
         }
       };
 
@@ -252,19 +254,7 @@ export default function AudioRecorder({
             </Box>
             <LinearProgress color="error" sx={{ mb: 2 }} />
 
-            {/* Live Transcription */}
-            {transcription && (
-              <Paper sx={{ p: 2, mb: 2, bgcolor: "grey.50" }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Live Transcription:
-                </Typography>
-                <Typography variant="body2">{transcription}</Typography>
-              </Paper>
-            )}
+            {/* No realtime transcription (disabled) */}
 
             <Button
               variant="contained"
@@ -294,19 +284,7 @@ export default function AudioRecorder({
               />
             </Box>
 
-            {/* Transcription Preview */}
-            {transcription && (
-              <Paper sx={{ p: 2, mb: 2, bgcolor: "info.light" }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Transcription:
-                </Typography>
-                <Typography variant="body2">{transcription}</Typography>
-              </Paper>
-            )}
+            {/* Transcription disabled */}
 
             {/* Title Input */}
             <TextField
