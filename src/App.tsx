@@ -9,6 +9,7 @@ import RoleMapping from "./pages/admin/RoleMapping";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import UserDashboard from "./pages/user/Dashboard";
+import AudioReview from "./pages/user/AudioReview";
 import {
   BrowserRouter as Router,
   Routes,
@@ -104,6 +105,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Single audio review page */}
+            <Route
+              path="/:company/:app/audio/:id"
+              element={
+                <ProtectedRoute>
+                  <AudioReview />
                 </ProtectedRoute>
               }
             />

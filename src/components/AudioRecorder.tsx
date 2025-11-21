@@ -13,6 +13,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import StopIcon from "@mui/icons-material/Stop";
 import SaveIcon from "@mui/icons-material/Save";
 import { mutate } from "../api-builder";
+import { useNavigate } from "react-router-dom";
 import { uuidv4 } from "../api-builder/security";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -24,6 +25,7 @@ export default function AudioRecorder({
   onRecordingComplete,
 }: AudioRecorderProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [title, setTitle] = useState("");
@@ -198,6 +200,24 @@ export default function AudioRecorder({
 
       if (onRecordingComplete) {
         onRecordingComplete(response);
+      }
+
+      // Navigate to review page if we can determine the new id
+      try {
+        const serverRow = Array.isArray(response?.data)
+          ? response.data[0]
+          : response?.data;
+        const newId = serverRow?.id || serverRow?.insertId || serverRow?.ID;
+        if (newId) {
+          // compute company/app slugs from pathname if present
+          const parts = window.location.pathname.split("/").filter(Boolean);
+          const company = parts[0] || "";
+          const app = parts[1] || "";
+          const base = company && app ? `/${company}/${app}` : "";
+          navigate(`${base}/audio/${newId}`);
+        }
+      } catch (navErr) {
+        console.warn("Could not navigate to audio review page:", navErr);
       }
     } catch (err: any) {
       setError(err?.message || "Failed to save recording");
