@@ -2,20 +2,20 @@ import axios from "axios";
 
 // Build baseURL for multi-tenant requests
 // Prefer Vite env var, but fall back to the current origin so the app works
-// when VITE_API_HOST is not set (prevents requests to invalid hosts).
-const rawApiHost = import.meta.env.VITE_API_HOST || "";
-export const API_HOST = (
-  rawApiHost ||
-  (typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost:4000")
-).replace(/\/$/, "");
+// when VITE_API_HOST is not set. Additionally, detect clearly bogus/stale
+// build-time hosts (e.g., trycloudflare) and prefer the current origin
+// to avoid DNS/network errors in local usage.
+const rawApiHost = (import.meta.env.VITE_API_HOST as string) || "";
+const fallbackOrigin =
+  typeof window !== "undefined" ? window.location.origin : "http://localhost:4000";
+const suspiciousHostPattern = /trycloudflare|cloudflare|trycloudflare/i;
+const useFallback = !rawApiHost || suspiciousHostPattern.test(rawApiHost);
 if (!rawApiHost) {
-  console.warn(
-    "VITE_API_HOST not set — using window.location.origin as API_HOST:",
-    API_HOST
-  );
+  console.warn("VITE_API_HOST not set — using window.location.origin as API_HOST:", fallbackOrigin);
+} else if (suspiciousHostPattern.test(rawApiHost)) {
+  console.warn("VITE_API_HOST looks suspicious; ignoring it and using window.location.origin:", rawApiHost);
 }
+export const API_HOST = (useFallback ? fallbackOrigin : rawApiHost).replace(/\/$/, "");
 
 // Extract company and app slugs from the URL path
 function extractSlugs() {
