@@ -4,9 +4,17 @@ import axios from "axios";
 // Prefer Vite env var, but fall back to the current origin so the app works
 // when VITE_API_HOST is not set (prevents requests to invalid hosts).
 const rawApiHost = import.meta.env.VITE_API_HOST || "";
-export const API_HOST = (rawApiHost || (typeof window !== "undefined" ? window.location.origin : "http://localhost:4000")).replace(/\/$/, "");
+export const API_HOST = (
+  rawApiHost ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:4000")
+).replace(/\/$/, "");
 if (!rawApiHost) {
-  console.warn("VITE_API_HOST not set — using window.location.origin as API_HOST:", API_HOST);
+  console.warn(
+    "VITE_API_HOST not set — using window.location.origin as API_HOST:",
+    API_HOST
+  );
 }
 
 // Extract company and app slugs from the URL path
@@ -27,7 +35,6 @@ function extractSlugs() {
 }
 
 const { company: companySlug, app: appSlug } = extractSlugs();
-
 
 // Set baseURL to include company and app slugs if available
 const baseURL =
