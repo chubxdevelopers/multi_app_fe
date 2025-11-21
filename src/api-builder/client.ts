@@ -31,8 +31,19 @@ export async function send(opts: SendOpts) {
     ? `${resolvedBase}${resolvedBase.includes("?") ? "&" : "?"}${opts.query}`
     : resolvedBase;
 
+  // Attempt the primary request, and if it fails due to network error or a
+  // 404 we will retry once against the current origin (useful when
+  // VITE_API_HOST points to an unreachable host in some deployments).
+  const originBase =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${opts.url.startsWith("/") ? "" : "/"}${opts.url}`
+      : fullUrl;
+
   let attempt = 0;
-  while (true) {
+  const maxAttempts = 2; // primary + optional fallback
+  let lastError: any = null;
+
+  while (attempt < maxAttempts) {
     attempt++;
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -41,48 +52,64 @@ export async function send(opts: SendOpts) {
       token: opts.token,
       idempotencyKey: opts.idempotencyKey,
     });
-    if (opts.body && !headers["Content-Type"])
-      headers["Content-Type"] = "application/json";
+    if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
 
+    // choose URL: first attempt uses fullUrl, second attempt (if any) uses originBase
+    const tryUrl = attempt === 1 ? fullUrl : originBase;
     try {
-      const res = await fetch(fullUrl, {
+      const res = await fetch(tryUrl, {
         method: opts.method,
         headers,
         body: opts.body ? JSON.stringify(opts.body) : undefined,
         signal: controller.signal,
-        // include cookies for auth (matches axios withCredentials)
         credentials: "include",
       });
       clearTimeout(id);
 
       const text = await res.text();
-      // try to parse JSON, fallback to text
       let payload: any = text;
       try {
         payload = text ? JSON.parse(text) : null;
       } catch (e) {
-        // leave as text
+        // non-json response — keep raw text
       }
 
       if (!res.ok) {
+        // If first attempt fails with 404 or network error, try the fallback once
         const err = new Error(`Request failed ${res.status}: ${text}`);
         (err as any).status = res.status;
         (err as any).body = payload;
+        // If this was the first attempt and status is 404, continue to retry against origin
+        if (attempt === 1 && (res.status === 404 || res.status === 0)) {
+          lastError = err;
+          continue;
+        }
         throw err;
       }
 
       return payload;
     } catch (err: any) {
       clearTimeout(id);
+      lastError = err;
+
       // treat abort as timeout
-      const isTimeout =
-        err && (err.name === "AbortError" || err instanceof DOMException);
-      if (isTimeout && attempt <= maxRetries) {
-        // retry only on timeout
+      const isTimeout = err && (err.name === "AbortError" || err instanceof DOMException);
+      // retry on timeout if allowed
+      if (isTimeout && attempt === 1) {
         continue;
       }
-      if (isTimeout) throw new TimeoutError();
+
+      // Retry once using origin fallback when first attempt had a network error
+      if (attempt === 1) {
+        // proceed to next loop to retry with originBase
+        continue;
+      }
+
+      // otherwise, throw the last error
       throw err;
     }
   }
+
+  // if we exit loop, throw last observed error
+  throw lastError || new Error("Request failed");
 }

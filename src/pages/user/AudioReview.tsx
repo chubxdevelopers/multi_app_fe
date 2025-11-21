@@ -34,7 +34,8 @@ export default function AudioReview() {
         } as any;
         const resp = await apiPost("/api/query/v1/base_resource", payload);
         if (!mounted) return;
-        if (!resp || !resp.success) throw new Error(resp?.error || "Failed to load");
+        if (!resp || !resp.success)
+          throw new Error(resp?.error || "Failed to load");
         const row = Array.isArray(resp.data) ? resp.data[0] : resp.data;
         setRecord(row || null);
 
@@ -67,12 +68,19 @@ export default function AudioReview() {
   }, [id]);
 
   if (loading) return <div style={{ padding: 16 }}>Loading...</div>;
-  if (error) return <div style={{ padding: 16, color: "red" }}>Error: {error}</div>;
+  if (error)
+    return <div style={{ padding: 16, color: "red" }}>Error: {error}</div>;
   if (!record) return <div style={{ padding: 16 }}>No record found</div>;
 
   const transcriptionText =
-    record.new_tran || record.transcription || record.transcript ||
-    (transcriptions.length ? transcriptions[0].transcription || transcriptions[0].text || JSON.stringify(transcriptions[0]) : "");
+    record.new_tran ||
+    record.transcription ||
+    record.transcript ||
+    (transcriptions.length
+      ? transcriptions[0].transcription ||
+        transcriptions[0].text ||
+        JSON.stringify(transcriptions[0])
+      : "");
 
   return (
     <div style={{ padding: 20 }}>
@@ -83,7 +91,9 @@ export default function AudioReview() {
 
       <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
         <div>
-          <div style={{ marginBottom: 8 }}><strong>Original Audio</strong></div>
+          <div style={{ marginBottom: 8 }}>
+            <strong>Original Audio</strong>
+          </div>
           {record.audio_url ? (
             <audio controls src={record.audio_url} style={{ width: 360 }} />
           ) : (
@@ -92,9 +102,15 @@ export default function AudioReview() {
         </div>
 
         <div>
-          <div style={{ marginBottom: 8 }}><strong>Processed Audio</strong></div>
+          <div style={{ marginBottom: 8 }}>
+            <strong>Processed Audio</strong>
+          </div>
           {record.processed_audio ? (
-            <audio controls src={record.processed_audio} style={{ width: 360 }} />
+            <audio
+              controls
+              src={record.processed_audio}
+              style={{ width: 360 }}
+            />
           ) : (
             <div>No processed audio URL available</div>
           )}
@@ -104,7 +120,15 @@ export default function AudioReview() {
       <div style={{ marginTop: 8 }}>
         <h3>Transcription</h3>
         {transcriptionText ? (
-          <pre style={{ whiteSpace: "pre-wrap", background: "#f6f6f6", padding: 12 }}>{transcriptionText}</pre>
+          <pre
+            style={{
+              whiteSpace: "pre-wrap",
+              background: "#f6f6f6",
+              padding: 12,
+            }}
+          >
+            {transcriptionText}
+          </pre>
         ) : (
           <div>No transcription found for this audio.</div>
         )}
