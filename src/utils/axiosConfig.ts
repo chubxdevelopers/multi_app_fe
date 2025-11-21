@@ -9,12 +9,23 @@ const rawApiHost = (import.meta.env.VITE_API_HOST as string) || "";
 const fallbackOrigin =
   typeof window !== "undefined" ? window.location.origin : "http://localhost:4000";
 const suspiciousHostPattern = /trycloudflare|cloudflare|trycloudflare/i;
-const useFallback = !rawApiHost || suspiciousHostPattern.test(rawApiHost);
+// Detect whether we're running on a local dev origin
+const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+const isLocalhost = /localhost|127\.0\.0\.1/.test(hostname);
+
+// Use the rawApiHost when it's provided unless it's clearly suspicious AND we're running locally.
+// In production/staging we trust the build-time VITE_API_HOST value.
+const useFallback = !rawApiHost || (suspiciousHostPattern.test(rawApiHost) && isLocalhost);
+
 if (!rawApiHost) {
   console.warn("VITE_API_HOST not set — using window.location.origin as API_HOST:", fallbackOrigin);
-} else if (suspiciousHostPattern.test(rawApiHost)) {
-  console.warn("VITE_API_HOST looks suspicious; ignoring it and using window.location.origin:", rawApiHost);
+} else if (suspiciousHostPattern.test(rawApiHost) && isLocalhost) {
+  console.warn("VITE_API_HOST looks suspicious and we're on localhost; ignoring it and using window.location.origin:", rawApiHost);
+} else if (suspiciousHostPattern.test(rawApiHost) && !isLocalhost) {
+  // In non-local environments we assume the build-time host is intentional
+  console.warn("VITE_API_HOST looks suspicious but not running on localhost; using provided VITE_API_HOST:", rawApiHost);
 }
+
 export const API_HOST = (useFallback ? fallbackOrigin : rawApiHost).replace(/\/$/, "");
 
 // Extract company and app slugs from the URL path
