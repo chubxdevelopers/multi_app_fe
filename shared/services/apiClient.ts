@@ -1,7 +1,10 @@
 // Simple API client that targets the current origin. This ensures the
 // frontend talks to the backend served from the same host and avoids
 // using stale build-time host values.
-const BASE = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+const BASE =
+  typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:3000";
 
 export async function apiGet(path: string) {
   const url = `${BASE}${path.startsWith("/") ? path : "/" + path}`;

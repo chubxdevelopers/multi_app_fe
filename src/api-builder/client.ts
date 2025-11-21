@@ -36,7 +36,9 @@ export async function send(opts: SendOpts) {
   // VITE_API_HOST points to an unreachable host in some deployments).
   const originBase =
     typeof window !== "undefined"
-      ? `${window.location.origin}${opts.url.startsWith("/") ? "" : "/"}${opts.url}`
+      ? `${window.location.origin}${opts.url.startsWith("/") ? "" : "/"}${
+          opts.url
+        }`
       : fullUrl;
 
   let attempt = 0;
@@ -52,7 +54,8 @@ export async function send(opts: SendOpts) {
       token: opts.token,
       idempotencyKey: opts.idempotencyKey,
     });
-    if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+    if (opts.body && !headers["Content-Type"])
+      headers["Content-Type"] = "application/json";
 
     // choose URL: first attempt uses fullUrl, second attempt (if any) uses originBase
     const tryUrl = attempt === 1 ? fullUrl : originBase;
@@ -93,7 +96,8 @@ export async function send(opts: SendOpts) {
       lastError = err;
 
       // treat abort as timeout
-      const isTimeout = err && (err.name === "AbortError" || err instanceof DOMException);
+      const isTimeout =
+        err && (err.name === "AbortError" || err instanceof DOMException);
       // retry on timeout if allowed
       if (isTimeout && attempt === 1) {
         continue;

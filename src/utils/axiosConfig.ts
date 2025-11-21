@@ -5,7 +5,10 @@ import axios from "axios";
 // stale or misconfigured build-time host (e.g. trycloudflare) which produced
 // 404/network errors in your environment. If you intentionally host the API
 // on a separate domain, set up a proper reverse proxy or update this code.
-const forcedOrigin = typeof window !== "undefined" ? window.location.origin : "http://localhost:4000";
+const forcedOrigin =
+  typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:4000";
 export const API_HOST = forcedOrigin.replace(/\/$/, "");
 
 // Extract company and app slugs from the URL path
