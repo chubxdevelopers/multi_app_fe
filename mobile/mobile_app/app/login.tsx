@@ -182,4 +182,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 6,
   },
+  errorText: { color: "red", marginTop: 4, fontSize: 12 },
 });

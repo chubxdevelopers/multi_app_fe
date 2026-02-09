@@ -68,7 +68,9 @@ export default function AddUser() {
         setTeams(teamsRes.data);
         setRoles(rolesRes.data);
       } catch (err: any) {
-        setError("Failed to load companies, teams, or roles. Please try again.");
+        setError(
+          "Failed to load companies, teams, or roles. Please try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -116,17 +118,17 @@ export default function AddUser() {
       <Typography component="h1" variant="h5" gutterBottom>
         Add New User
       </Typography>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper className="card fade-in" elevation={3} sx={{ p: 3 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-            {!error && !loading && companies.length === 0 && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                No companies available
-              </Alert>
-            )}
+        {!error && !loading && companies.length === 0 && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            No companies available
+          </Alert>
+        )}
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {success}
@@ -228,6 +230,7 @@ export default function AddUser() {
             </Select>
           </FormControl>
           <Button
+            className="btn"
             type="submit"
             fullWidth
             variant="contained"

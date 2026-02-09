@@ -1,0 +1,12 @@
+@import "../theme.css";
+.add-capability .page-title {
+  color: var(--color-primary);
+}
+.add-capability .card {
+  padding: var(--space-md);
+}
+@media (max-width: 600px) {
+  .add-capability {
+    padding: var(--space-lg);
+  }
+}

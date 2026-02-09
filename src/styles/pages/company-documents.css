@@ -1,0 +1,133 @@
+@import "../theme.css";
+
+/* Company Documents - make upload prominent and list readable */
+.company-docs .page-title {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.company-docs-page {
+  /* Force this admin page to use the light surface, even if the OS/browser is in dark mode */
+  background: #ffffff !important;
+}
+.company-docs-page .page-title {
+  color: var(--color-text);
+}
+.company-docs .card {
+  background: var(--color-surface); /* white */
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--card-shadow-sm);
+  color: var(--color-text);
+}
+.company-docs .upload-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.company-docs .upload-button {
+  /* Solid blue button for clarity */
+  background: var(--color-primary) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-radius: 10px;
+  padding: 12px 18px;
+  text-transform: uppercase;
+}
+.company-docs .upload-button:focus,
+.company-docs .upload-button:active {
+  outline: none;
+  box-shadow: 0 6px 18px rgba(11, 102, 209, 0.18);
+}
+
+/* Make form inputs explicitly white for contrast */
+.company-docs .MuiFormControl-root .MuiInputBase-root,
+.company-docs .MuiFormControl-root .MuiInputBase-root input {
+  background: #fff;
+  color: var(--color-text);
+  border-radius: 8px;
+}
+
+/* Ensure summary card and misc text are high contrast */
+.company-docs .card .muted {
+  color: var(--color-muted);
+}
+
+.company-docs .docs-list {
+  margin-top: var(--space-md);
+}
+.company-docs .doc-row {
+  padding: 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 36, 0.06);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.company-docs .doc-row a {
+  color: var(--color-text) !important;
+  text-decoration: none;
+}
+.company-docs .doc-row .meta {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .company-docs .card {
+    padding: var(--space-lg);
+  }
+}
+
+/* Ensure MUI tab and input colors display correctly in forced-light view */
+.company-docs-page .MuiTabs-root,
+.company-docs-page .MuiTab-root {
+  color: var(--color-text) !important;
+}
+.company-docs-page .MuiFormControl-root .MuiInputBase-root,
+.company-docs-page .MuiFormControl-root .MuiInputBase-root input {
+  background: #fff !important;
+  color: var(--color-text) !important;
+}
+.company-docs-page .card {
+  background: #fff !important;
+  color: var(--color-text) !important;
+}
+
+/* Improve readability: stronger colors for headings, tabs, placeholders */
+.company-docs-page .page-title {
+  color: var(--color-primary-600) !important;
+  opacity: 1 !important;
+  font-weight: 800;
+  font-size: var(--heading-1);
+}
+.company-docs-page .MuiTabs-root {
+  margin-bottom: 6px;
+}
+.company-docs-page .MuiTab-root {
+  color: var(--color-muted) !important;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.company-docs-page .MuiTab-root.Mui-selected {
+  color: var(--color-primary) !important;
+}
+.company-docs-page .MuiTabs-indicator {
+  background: var(--color-primary) !important;
+  height: 3px !important;
+  border-radius: 3px;
+}
+.company-docs-page .MuiFormLabel-root {
+  color: var(--color-text) !important;
+  font-weight: 600;
+}
+.company-docs-page input::placeholder,
+.company-docs-page textarea::placeholder {
+  color: var(--color-muted) !important;
+  opacity: 1 !important;
+}
+.company-docs-page .muted {
+  color: var(--color-muted) !important;
+}

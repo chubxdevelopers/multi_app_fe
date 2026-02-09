@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "./contexts/AuthContext";
 import { getCompanySlug, getAppSlug } from "../src/services/tokenStorage";
@@ -29,9 +29,9 @@ export default function Index() {
         return;
       }
 
-      // send everyone to the unified dashboard explicitly; feature visibility is handled there
+      // send everyone to the quick actions page for non-admin users; feature visibility is handled there
       try {
-        await router.replace("/(tabs)/dashboard");
+        await router.replace("/quick-actions");
       } catch (e) {
         try {
           await router.replace("/");
@@ -48,7 +48,11 @@ export default function Index() {
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>{loading ? "Checking session…" : "Redirecting…"}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0b66d1" />
+      ) : (
+        <Text>Redirecting…</Text>
+      )}
     </View>
   );
 }

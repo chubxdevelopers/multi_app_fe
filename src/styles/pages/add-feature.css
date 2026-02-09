@@ -1,0 +1,12 @@
+@import "../theme.css";
+.add-feature .page-title {
+  color: var(--color-primary);
+}
+.add-feature .card {
+  padding: var(--space-md);
+}
+@media (max-width: 600px) {
+  .add-feature {
+    padding: var(--space-lg);
+  }
+}

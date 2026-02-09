@@ -1,0 +1,14 @@
+@import "../theme.css";
+
+.add-user-form .page-title {
+  color: var(--color-primary);
+}
+.add-user-form .form-row input {
+  padding: 12px;
+}
+
+@media (max-width: 600px) {
+  .add-user-form {
+    padding: var(--space-lg);
+  }
+}

@@ -1,0 +1,12 @@
+@import "../theme.css";
+.user-dashboard .page-title {
+  color: var(--color-primary);
+}
+.user-dashboard .card {
+  padding: var(--space-md);
+}
+@media (max-width: 600px) {
+  .user-dashboard {
+    padding: var(--space-lg);
+  }
+}

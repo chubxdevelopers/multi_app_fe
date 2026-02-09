@@ -9,6 +9,7 @@ import { getAccessToken } from "../src/services/tokenStorage";
 
 interface AudioRecorderProps {
   onRecordingComplete?: (recording: any) => void;
+  defaultTitle?: string;
 }
 
 // Use explicit high-quality 48k recording options to capture clearer audio
@@ -30,6 +31,7 @@ const RECORDING_OPTIONS_HIGH_48K: any = {
 
 export default function AudioRecorder({
   onRecordingComplete,
+  defaultTitle,
 }: AudioRecorderProps) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -45,18 +47,15 @@ export default function AudioRecorder({
         (async () => {
           try {
             const status = await rec.getStatusAsync().catch(() => null);
-            if (
-              status &&
-              (status.isRecording || status.durationMillis)
-            ) {
+            if (status && (status.isRecording || status.durationMillis)) {
               await rec.stopAndUnloadAsync();
             }
           } catch (e) {
             // ignore unload errors
             console.debug(
-                "AudioRecorder cleanup unload ignored:",
-                (e as any)?.message || e
-              );
+              "AudioRecorder cleanup unload ignored:",
+              (e as any)?.message || e
+            );
           }
         })();
       }
@@ -103,12 +102,15 @@ export default function AudioRecorder({
           await rec.stopAndUnloadAsync();
         }
       } catch (e) {
-        console.debug("stopAndUnloadAsync ignored error:", (e as any)?.message || e);
+        console.debug(
+          "stopAndUnloadAsync ignored error:",
+          (e as any)?.message || e
+        );
       }
       const uri = rec.getURI();
       const recObj = {
         id: Date.now(),
-        title: "Recording",
+        title: defaultTitle || "Recording",
         audio_url: uri,
         created_at: new Date().toISOString(),
         status: "new",
@@ -174,7 +176,9 @@ export default function AudioRecorder({
             } else {
               // Node Buffer fallback (shouldn't usually be available in RN)
               try {
-                b64 = (global as any).Buffer.from(binary, "binary").toString("base64");
+                b64 = (global as any).Buffer.from(binary, "binary").toString(
+                  "base64"
+                );
               } catch (bufErr) {
                 throw readErr2;
               }
@@ -196,7 +200,7 @@ export default function AudioRecorder({
         operation: "insert",
         resource: "audio_recordings",
         data: {
-          title: "Recording",
+          title: defaultTitle || "Recording",
           audio_data: dataUrl,
           status: "new",
         },
@@ -223,7 +227,7 @@ export default function AudioRecorder({
         const form = new FormData();
         form.append("operation", "insert");
         form.append("resource", "audio_recordings");
-        form.append("title", "Recording");
+        form.append("title", defaultTitle || "Recording");
         form.append("status", "new");
         // Append file blob
         form.append("audio_file", {

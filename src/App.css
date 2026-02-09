@@ -1,42 +1,20 @@
+/* App-level overrides that use theme tokens */
 #root {
-  max-width: 1280px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
+  padding: var(--space-lg);
 }
 
 .read-the-docs {
-  color: #888;
+  color: var(--color-muted);
+}
+
+/* Keep a small branded logo animation but subtle */
+.logo {
+  height: 64px;
+  padding: var(--space-md);
+  transition: filter var(--fast) var(--ease);
+}
+.logo:hover {
+  filter: drop-shadow(0 8px 28px rgba(37, 99, 235, 0.12));
 }

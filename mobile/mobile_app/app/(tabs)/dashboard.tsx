@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
 import {
   MaterialIcons,
@@ -51,10 +52,56 @@ export default function UserDashboard() {
   const [audioLoadingById, setAudioLoadingById] = useState<
     Record<number, boolean>
   >({});
+  const [teamOptions, setTeamOptions] = useState<
+    { name: string; role?: string }[]
+  >([]);
+  const [selectedRep, setSelectedRep] = useState<string>("");
+  const [managerRecs, setManagerRecs] = useState<any[]>([]);
+  const [managerLoading, setManagerLoading] = useState(false);
+  // Manager filters (mobile)
+  const [managerFilterTitle, setManagerFilterTitle] = useState("");
+  const [managerFilterDateFrom, setManagerFilterDateFrom] = useState("");
+  const [managerFilterDateTo, setManagerFilterDateTo] = useState("");
+  const [managerFilterKeywords, setManagerFilterKeywords] = useState("");
+  const [managerFilterScoreMin, setManagerFilterScoreMin] =
+    useState<string>("");
+  const [managerFilterScoreMax, setManagerFilterScoreMax] =
+    useState<string>("");
 
   const u = user || localUser;
   console.log("User dashboard - full user object:", u);
   console.log("User uiPermissions:", u?.uiPermissions);
+
+  // Brand selection
+  const [medicines, setMedicines] = useState<string[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>("");
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await query({
+          resource: "team_documents",
+          fields: ["medicines"],
+          filters: {},
+          timeoutMs: 8000,
+        });
+        const d: any = response;
+        const rows: any[] = Array.isArray(d?.data)
+          ? d.data
+          : Array.isArray(d)
+          ? d
+          : [];
+        const uniq = Array.from(
+          new Set(
+            rows
+              .map((r: any) => r?.medicines)
+              .filter((m: any) => m && typeof m === "string")
+          )
+        ) as string[];
+        setMedicines(uniq);
+      } catch (e) {}
+    };
+    load();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -78,6 +125,7 @@ export default function UserDashboard() {
           "recorded_by_role",
           "transcription",
           "created_at",
+          "analysis",
         ],
         filters: {},
       });
@@ -114,6 +162,7 @@ export default function UserDashboard() {
         recording_timestamp: recording.created_at
           ? new Date(recording.created_at).toLocaleString()
           : "",
+        analysis: recording.analysis,
       }));
 
       setRecordingsData(mappedData);
@@ -123,6 +172,192 @@ export default function UserDashboard() {
       console.error("Error fetching recordings:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTeamOptions = async () => {
+    try {
+      const resp = await query({
+        resource: "audio_recordings",
+        fields: ["recorded_by", "recorded_by_role"],
+        filters: {},
+      });
+      const rows: any[] = Array.isArray(resp?.data)
+        ? resp.data
+        : Array.isArray(resp)
+        ? resp
+        : [];
+      const uniq = new Map<string, { name: string; role?: string }>();
+      rows.forEach((r) => {
+        if (r?.recorded_by) {
+          uniq.set(r.recorded_by, {
+            name: r.recorded_by,
+            role: r.recorded_by_role,
+          });
+        }
+      });
+      setTeamOptions(Array.from(uniq.values()));
+    } catch (e) {
+      console.warn("Failed to load team options", e);
+    }
+  };
+
+  const loadManagerRecordings = async (repName: string) => {
+    setManagerLoading(true);
+    setError("");
+    try {
+      const resp = await query({
+        resource: "audio_recordings",
+        fields: [
+          "id",
+          "title",
+          "recorded_by",
+          "recorded_by_role",
+          "transcription",
+          "created_at",
+          "analysis",
+        ],
+        filters: { "recorded_by.eq": repName },
+      });
+      const rows: any[] = Array.isArray(resp?.data)
+        ? resp.data
+        : Array.isArray(resp)
+        ? resp
+        : [];
+      const mapped = rows.map((recording: any) => ({
+        id: recording.id,
+        title: recording.title,
+        name: recording.recorded_by,
+        role: recording.recorded_by_role,
+        recording_transcript:
+          recording.transcription &&
+          recording.transcription !== "No transcription available"
+            ? recording.transcription
+            : "Pending...",
+        recording_timestamp: recording.created_at
+          ? new Date(recording.created_at).toLocaleString()
+          : "",
+        analysis: recording.analysis,
+      }));
+      setManagerRecs(mapped);
+    } catch (err: any) {
+      setError(err?.message || "Failed to fetch team recordings");
+      setManagerRecs([]);
+    } finally {
+      setManagerLoading(false);
+    }
+  };
+
+  const filterManagerRecs = (rows: any[]) => {
+    const titleQ = managerFilterTitle.trim().toLowerCase();
+    const kwQ = managerFilterKeywords.trim().toLowerCase();
+    const minScore = managerFilterScoreMin
+      ? Number(managerFilterScoreMin)
+      : undefined;
+    const maxScore = managerFilterScoreMax
+      ? Number(managerFilterScoreMax)
+      : undefined;
+    const from = managerFilterDateFrom
+      ? new Date(managerFilterDateFrom)
+      : undefined;
+    const to = managerFilterDateTo ? new Date(managerFilterDateTo) : undefined;
+    return rows.filter((r) => {
+      if (titleQ && !(r.title || "").toLowerCase().includes(titleQ))
+        return false;
+      if ((from || to) && r.recording_timestamp) {
+        const d = new Date(r.recording_timestamp);
+        if (from && d < from) return false;
+        if (to) {
+          const toEnd = new Date(to);
+          toEnd.setHours(23, 59, 59, 999);
+          if (d > toEnd) return false;
+        }
+      }
+      const formatted = formatAnalysisMobile(r.analysis);
+      const score = formatted?.overallScore ?? formatted?.score;
+      if (
+        minScore !== undefined &&
+        typeof score === "number" &&
+        score < minScore
+      )
+        return false;
+      if (
+        maxScore !== undefined &&
+        typeof score === "number" &&
+        score > maxScore
+      )
+        return false;
+      if (kwQ) {
+        const keywords: string[] = (formatted?.areasOfImprovement ??
+          formatted?.keywords ??
+          []) as any;
+        const joined = Array.isArray(keywords)
+          ? keywords.join(" ").toLowerCase()
+          : "";
+        if (!joined.includes(kwQ)) return false;
+      }
+      return true;
+    });
+  };
+
+  const handleViewAnalysis = (row: any) => {
+    Alert.alert(
+      row.title || "Recording Analysis",
+      row.analysis || "No analysis available",
+      [{ text: "Close" }],
+      { cancelable: true }
+    );
+  };
+
+  // Attempt to extract score and keywords of improvement from analysis content
+  const formatAnalysisMobile = (
+    analysis: any
+  ): {
+    score?: string | number;
+    overallScore?: string | number;
+    areasOfImprovement?: string[];
+    keywords?: string[];
+  } => {
+    if (!analysis) return {};
+    try {
+      const obj =
+        typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+      const keywordsArr = obj.areasOfImprovement || obj.keywords || [];
+      return {
+        score: obj.score ?? obj.overallScore,
+        overallScore: obj.overallScore ?? obj.score,
+        areasOfImprovement: Array.isArray(obj.areasOfImprovement)
+          ? obj.areasOfImprovement
+          : Array.isArray(keywordsArr)
+          ? keywordsArr
+          : [],
+        keywords: Array.isArray(obj.keywords) ? obj.keywords : undefined,
+      };
+    } catch {
+      // Fallback: try to parse simple patterns from string
+      const s = String(analysis);
+      const scoreMatch = s.match(/score\s*[:|-]\s*(\d+(?:\.\d+)?)/i);
+      const parts = s
+        .split(/\n|\r|,/)
+        .map((p) => p.trim())
+        .filter((p) => /improve|improvement|keyword/i.test(p));
+      const kws: string[] = [];
+      parts.forEach((p) => {
+        const m = p.match(/improve(?:ment)?s?\s*[:|-]\s*(.*)$/i);
+        if (m && m[1]) {
+          m[1]
+            .split(/,|;|•|-/)
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .forEach((x) => kws.push(x));
+        }
+      });
+      return {
+        score: scoreMatch ? Number(scoreMatch[1]) : undefined,
+        overallScore: scoreMatch ? Number(scoreMatch[1]) : undefined,
+        areasOfImprovement: kws,
+        keywords: kws,
+      };
     }
   };
 
@@ -141,6 +376,8 @@ export default function UserDashboard() {
     (user || localUser)?.uiPermissions,
     "see_app_name"
   );
+  const isManager =
+    ((user || localUser)?.role || "").toLowerCase() === "manager";
 
   // Download is gated by speech_to_text feature only
   const canDownload = canViewTranscription;
@@ -398,7 +635,7 @@ export default function UserDashboard() {
   return (
     <View style={[{ flex: 1 }, styles.container]}>
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.welcome}>Welcome, {user?.name}</Text>
           <View style={styles.chipsRow}>
             <View style={styles.chip}>
@@ -419,7 +656,15 @@ export default function UserDashboard() {
             )}
           </View>
         </View>
-        <Button title="Logout" onPress={handleLogout} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => router.push("/call-history")}
+            style={styles.historyButton}
+          >
+            <MaterialIcons name="history" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Button title="Logout" onPress={handleLogout} />
+        </View>
       </View>
 
       <View style={styles.infoBox}>
@@ -455,42 +700,20 @@ export default function UserDashboard() {
         <Text style={styles.cardSubtitle}>
           Available features for your account.
         </Text>
-        <View style={{ marginTop: 8 }}>
-          {canRecordAudio ? (
-            <View style={{ marginBottom: 8 }}>
-              <Button
-                title={"Record Audio"}
-                onPress={() => {
-                  /* show recorder UI */
-                }}
-              />
-            </View>
-          ) : null}
-
-          {canViewTranscription ? (
-            <View style={{ marginBottom: 8 }}>
-              <Button
-                title={"View Transcriptions"}
-                onPress={() => handleGetDetails()}
-              />
-            </View>
-          ) : null}
-
-          {canSeeAppName ? (
-            <View style={{ marginBottom: 8 }}>
-              <Button
-                title={`Open App (${(user || localUser)?.company ?? ""})`}
-                onPress={() => {
-                  /* possible route */
-                }}
-              />
-            </View>
-          ) : null}
-
+        <View style={{ gap: 8, marginTop: 8 }}>
+          {canRecordAudio && <Button title="Record Audio" onPress={() => {}} />}
+          {canViewTranscription && (
+            <Button title="View Transcriptions" onPress={handleGetDetails} />
+          )}
+          {isManager && (
+            <Button
+              title={managerLoading ? "Loading team..." : "Load Team"}
+              onPress={loadTeamOptions}
+              disabled={managerLoading}
+            />
+          )}
           {!canRecordAudio && !canViewTranscription && !canSeeAppName && (
-            <Text style={styles.mutedText}>
-              You do not have access to any features yet.
-            </Text>
+            <Text style={styles.mutedText}>No capabilities assigned.</Text>
           )}
         </View>
       </View>
@@ -510,6 +733,7 @@ export default function UserDashboard() {
             onPress={() => setShowDebug((s) => !s)}
           />
         </View>
+
         {showDebug && (
           <View style={{ marginTop: 8 }}>
             <Text style={{ fontFamily: "monospace" }}>
@@ -525,7 +749,50 @@ export default function UserDashboard() {
           <Text style={styles.cardSubtitle}>
             Create new audio recordings with automatic transcription
           </Text>
-          <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+          {/* Simple brand selector */}
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ marginBottom: 4, fontWeight: "600" }}>
+              Select Brand
+            </Text>
+            <TextInput
+              value={selectedBrand}
+              onChangeText={setSelectedBrand}
+              placeholder="Type or pick a brand"
+              style={{
+                borderWidth: 1,
+                borderColor: "#e5e7eb",
+                borderRadius: 8,
+                padding: 8,
+              }}
+            />
+            {/* lightweight picker: show first few suggestions */}
+            {selectedBrand.length === 0 && medicines.length > 0 && (
+              <View style={{ marginTop: 6 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {medicines.slice(0, 8).map((m) => (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => setSelectedBrand(m)}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        borderWidth: 1,
+                        borderColor: "#e5e7eb",
+                        borderRadius: 16,
+                        marginRight: 6,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12 }}>{m}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+          <AudioRecorder
+            onRecordingComplete={handleRecordingComplete}
+            defaultTitle={selectedBrand || undefined}
+          />
         </View>
       )}
 
@@ -552,8 +819,30 @@ export default function UserDashboard() {
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>{item.title || "-"}</Text>
-                    <Text style={styles.small}>{item.transcription}</Text>
-                    <Text style={styles.small}>{item.timestamp}</Text>
+                    <Text style={styles.small}>
+                      Transcription: {item.transcription}
+                    </Text>
+                    <Text style={styles.small}>Date: {item.timestamp}</Text>
+                    {(() => {
+                      const fmt = formatAnalysisMobile(item.analysis);
+                      const score = fmt.overallScore ?? fmt.score;
+                      const keywords =
+                        fmt.areasOfImprovement ?? fmt.keywords ?? [];
+                      return (
+                        <>
+                          <Text style={styles.small}>
+                            Score: {score ?? "-"}
+                          </Text>
+                          {Array.isArray(keywords) && keywords.length > 0 ? (
+                            <Text style={styles.small}>
+                              Improvement: {keywords.join(", ")}
+                            </Text>
+                          ) : (
+                            <Text style={styles.small}>Improvement: -</Text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </View>
                   <View style={styles.rowActions}>
                     {audioSrcById[item.id] ? (
@@ -579,6 +868,12 @@ export default function UserDashboard() {
                         onPress={() => handleDownload(item.id)}
                       />
                     )}
+                    <View style={{ height: 8 }} />
+                    <Button
+                      title={item.analysis ? "Analysis" : "No analysis"}
+                      onPress={() => handleViewAnalysis(item)}
+                      disabled={!item.analysis}
+                    />
                   </View>
                 </View>
               )}
@@ -615,10 +910,39 @@ export default function UserDashboard() {
                       {item.name} • {item.role}
                     </Text>
                     <Text style={styles.small}>
-                      {item.recording_transcript}
+                      Date: {item.recording_timestamp}
                     </Text>
+                    <Text style={styles.small}>
+                      Transcription: {item.recording_transcript}
+                    </Text>
+                    {(() => {
+                      const fmt = formatAnalysisMobile(item.analysis);
+                      const score = fmt.overallScore ?? fmt.score;
+                      const keywords =
+                        fmt.areasOfImprovement ?? fmt.keywords ?? [];
+                      return (
+                        <>
+                          <Text style={styles.small}>
+                            Score: {score ?? "-"}
+                          </Text>
+                          {Array.isArray(keywords) && keywords.length > 0 ? (
+                            <Text style={styles.small}>
+                              Improvement: {keywords.join(", ")}
+                            </Text>
+                          ) : (
+                            <Text style={styles.small}>Improvement: -</Text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </View>
                   <View style={styles.rowActions}>
+                    <Button
+                      title={item.analysis ? "Analysis" : "No analysis"}
+                      onPress={() => handleViewAnalysis(item)}
+                      disabled={!item.analysis}
+                    />
+                    <View style={{ height: 8 }} />
                     <Button
                       title={
                         audioLoadingById[item.id] ? "Loading..." : "Listen"
@@ -640,6 +964,170 @@ export default function UserDashboard() {
             />
           ) : showDetails && recordingsData.length === 0 && !loading ? (
             <Text style={styles.infoText}>No recordings found.</Text>
+          ) : null}
+        </View>
+      )}
+
+      {isManager && (
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>Manager View: Team Recordings</Text>
+            <Button title="Refresh team" onPress={loadTeamOptions} />
+          </View>
+
+          {teamOptions.length > 0 ? (
+            <FlatList
+              data={teamOptions}
+              keyExtractor={(item) => item.name}
+              horizontal
+              renderItem={({ item }) => (
+                <Button
+                  title={`${item.name}${
+                    item.role ? " (" + item.role + ")" : ""
+                  }`}
+                  onPress={() => {
+                    setSelectedRep(item.name);
+                    loadManagerRecordings(item.name);
+                  }}
+                  color={selectedRep === item.name ? "#1976d2" : undefined}
+                />
+              )}
+              style={{ marginVertical: 8 }}
+            />
+          ) : (
+            <Text style={styles.infoText}>
+              Tap Refresh team to load members.
+            </Text>
+          )}
+
+          {managerLoading ? (
+            <ActivityIndicator style={{ marginVertical: 8 }} />
+          ) : selectedRep && managerRecs.length > 0 ? (
+            <>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.cardSubtitle}>Filters</Text>
+                <View style={{ gap: 8 }}>
+                  <View
+                    style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}
+                  >
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <Text style={styles.small}>Title contains</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g. intro call"
+                        value={managerFilterTitle}
+                        onChangeText={setManagerFilterTitle}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 140 }}>
+                      <Text style={styles.small}>Date From (YYYY-MM-DD)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="2025-01-01"
+                        value={managerFilterDateFrom}
+                        onChangeText={setManagerFilterDateFrom}
+                        keyboardType="numbers-and-punctuation"
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 140 }}>
+                      <Text style={styles.small}>Date To (YYYY-MM-DD)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="2025-12-31"
+                        value={managerFilterDateTo}
+                        onChangeText={setManagerFilterDateTo}
+                        keyboardType="numbers-and-punctuation"
+                      />
+                    </View>
+                  </View>
+                  <View
+                    style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}
+                  >
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <Text style={styles.small}>Keywords contain</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g. closing, rapport"
+                        value={managerFilterKeywords}
+                        onChangeText={setManagerFilterKeywords}
+                      />
+                    </View>
+                    <View style={{ width: 120 }}>
+                      <Text style={styles.small}>Score Min</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="0"
+                        value={managerFilterScoreMin}
+                        onChangeText={setManagerFilterScoreMin}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <View style={{ width: 120 }}>
+                      <Text style={styles.small}>Score Max</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="100"
+                        value={managerFilterScoreMax}
+                        onChangeText={setManagerFilterScoreMax}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <FlatList
+                data={managerRecs}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                  <View style={styles.row}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle}>{item.title || "-"}</Text>
+                      <Text style={styles.small}>
+                        {item.name} • {item.role}
+                      </Text>
+                      <Text style={styles.small}>
+                        Date: {item.recording_timestamp}
+                      </Text>
+                      <Text style={styles.small}>
+                        Transcription: {item.recording_transcript}
+                      </Text>
+                      {(() => {
+                        const fmt = formatAnalysisMobile(item.analysis);
+                        const score = fmt.overallScore ?? fmt.score;
+                        const keywords =
+                          fmt.areasOfImprovement ?? fmt.keywords ?? [];
+                        return (
+                          <>
+                            <Text style={styles.small}>
+                              Score: {score ?? "-"}
+                            </Text>
+                            {Array.isArray(keywords) && keywords.length > 0 ? (
+                              <Text style={styles.small}>
+                                Improvement: {keywords.join(", ")}
+                              </Text>
+                            ) : (
+                              <Text style={styles.small}>Improvement: -</Text>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </View>
+                    <View style={styles.rowActions}>
+                      <Button
+                        title={item.analysis ? "Analysis" : "No analysis"}
+                        onPress={() => handleViewAnalysis(item)}
+                        disabled={!item.analysis}
+                      />
+                    </View>
+                  </View>
+                )}
+                nestedScrollEnabled
+              />
+            </>
+          ) : selectedRep ? (
+            <Text style={styles.infoText}>
+              No recordings found for {selectedRep}.
+            </Text>
           ) : null}
         </View>
       )}
@@ -711,4 +1199,18 @@ const styles = StyleSheet.create({
   rowTitle: { fontWeight: "600" },
   rowActions: { justifyContent: "center", alignItems: "center", width: 110 },
   small: { color: "#666" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  historyButton: {
+    backgroundColor: "#0b66d1",
+    padding: 8,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

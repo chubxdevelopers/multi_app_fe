@@ -73,7 +73,7 @@ export default function AddCapability() {
       <Typography component="h1" variant="h5" gutterBottom>
         Add Feature Capability
       </Typography>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper className="card fade-in" elevation={3} sx={{ p: 3 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -121,7 +121,13 @@ export default function AddCapability() {
               ))}
             </FormGroup>
           </FormControl>
-          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>
+          <Button
+            className="btn"
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3 }}
+          >
             Create Capability
           </Button>
         </form>

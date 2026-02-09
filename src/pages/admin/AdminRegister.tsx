@@ -65,12 +65,14 @@ export default function AdminRegister() {
           if (token && user) {
             login(token, user, companySlug, appSlug);
           }
-          const dashboardRoute = response.data.dashboardRoute || `/${companySlug}/${appSlug}/admin/dashboard`;
+          const dashboardRoute =
+            response.data.dashboardRoute ||
+            `/${companySlug}/${appSlug}/admin/dashboard`;
           navigate(dashboardRoute, { replace: true });
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Registration failed");
-        console.log(api)
+        console.log(api);
         console.log(err);
         setSuccess("");
       }
@@ -90,7 +92,11 @@ export default function AdminRegister() {
         <Typography component="h1" variant="h5">
           Admin Registration
         </Typography>
-        <Paper elevation={3} sx={{ p: 3, mt: 3, width: "100%" }}>
+        <Paper
+          className="card fade-in"
+          elevation={3}
+          sx={{ p: 3, mt: 3, width: "100%" }}
+        >
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -138,6 +144,7 @@ export default function AdminRegister() {
             />
             {/* Company is derived from the URL and not entered manually */}
             <Button
+              className="btn"
               type="submit"
               fullWidth
               variant="contained"

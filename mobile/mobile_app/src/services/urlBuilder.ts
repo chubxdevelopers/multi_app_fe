@@ -1,4 +1,5 @@
 import { API_HOST } from "../../utils/axiosConfig";
+export { API_HOST };
 
 export function buildFullApiUrl(path: string, company?: string, app?: string) {
   const p = path.startsWith("/") ? path : `/${path}`;

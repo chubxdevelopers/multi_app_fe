@@ -23,6 +23,8 @@ import {
   Security,
   SwapHoriz,
   ExitToApp,
+  Description,
+  Group,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -42,15 +44,41 @@ export default function AdminLayout() {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, path: buildPath("/admin/dashboard") },
-    { text: "Add User", icon: <PersonAdd />, path: buildPath("/admin/dashboard/add-user") },
-    { text: "Add Feature", icon: <Category />, path: buildPath("/admin/dashboard/add-feature") },
+    {
+      text: "Dashboard",
+      icon: <Dashboard />,
+      path: buildPath("/admin/dashboard"),
+    },
+    {
+      text: "Add User",
+      icon: <PersonAdd />,
+      path: buildPath("/admin/dashboard/add-user"),
+    },
+    {
+      text: "Add Feature",
+      icon: <Category />,
+      path: buildPath("/admin/dashboard/add-feature"),
+    },
     {
       text: "Add Capability",
       icon: <Security />,
       path: buildPath("/admin/dashboard/capabilities-add"),
     },
-    { text: "Role Mapping", icon: <SwapHoriz />, path: buildPath("/admin/dashboard/roles-mapping") },
+    {
+      text: "Company Documents",
+      icon: <Description />,
+      path: buildPath("/admin/dashboard/company-documents"),
+    },
+    {
+      text: "Team Documents",
+      icon: <Group />,
+      path: buildPath("/admin/dashboard/team-documents"),
+    },
+    {
+      text: "Role Mapping",
+      icon: <SwapHoriz />,
+      path: buildPath("/admin/dashboard/roles-mapping"),
+    },
   ];
 
   const drawer = (
@@ -94,13 +122,12 @@ export default function AdminLayout() {
           <Button
             color="inherit"
             onClick={() => {
-  logout();
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  const companySlug = parts[0];
-  const appSlug = parts[1];
-  navigate(`/${companySlug}/${appSlug}/login`);
-}}
-
+              logout();
+              const parts = window.location.pathname.split("/").filter(Boolean);
+              const companySlug = parts[0];
+              const appSlug = parts[1];
+              navigate(`/${companySlug}/${appSlug}/login`);
+            }}
             startIcon={<ExitToApp />}
           >
             Logout
@@ -150,7 +177,9 @@ export default function AdminLayout() {
           marginTop: "64px", // Height of the AppBar
         }}
       >
-        <Outlet />
+        <div className="app-container">
+          <Outlet />
+        </div>
       </Box>
     </Box>
   );

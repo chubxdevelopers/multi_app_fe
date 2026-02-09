@@ -1,4 +1,4 @@
-import bakedManifest from './manifest.json';
+import bakedManifest from "./manifest.json";
 
 export type ResourceDef = {
   name: string;
@@ -13,8 +13,8 @@ export type Manifest = {
   resources: ResourceDef[];
 };
 
-const STORAGE_KEY = 'api_builder_manifest';
-const ETAG_KEY = 'api_builder_manifest_etag';
+const STORAGE_KEY = "api_builder_manifest";
+const ETAG_KEY = "api_builder_manifest_etag";
 
 let currentManifest: Manifest = bakedManifest as Manifest;
 
@@ -22,7 +22,24 @@ let currentManifest: Manifest = bakedManifest as Manifest;
 try {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
-    currentManifest = JSON.parse(raw) as Manifest;
+    const cached = JSON.parse(raw) as Manifest;
+    // If versions differ, prefer the baked-in (newer) manifest and overwrite cache
+    if (
+      !cached ||
+      cached.schemaVersion !== (bakedManifest as Manifest).schemaVersion
+    ) {
+      currentManifest = bakedManifest as Manifest;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentManifest));
+      } catch {}
+    } else {
+      currentManifest = cached;
+    }
+  } else {
+    // No cache; seed it with baked manifest
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentManifest));
+    } catch {}
   }
 } catch (e) {
   // ignore JSON errors and keep baked-in manifest
@@ -39,15 +56,18 @@ export function getSchemaVersion(): string {
 }
 
 // Background refresh using ETag; if server returns 304 we keep current manifest.
-export async function initRegistryRefresh(options?: { url?: string; onUpdated?: (m: Manifest) => void }) {
-  const url = options?.url ?? '/schema/resources';
+export async function initRegistryRefresh(options?: {
+  url?: string;
+  onUpdated?: (m: Manifest) => void;
+}) {
+  const url = options?.url ?? "/schema/resources";
   const cachedEtag = localStorage.getItem(ETAG_KEY);
 
   try {
     const headers: Record<string, string> = {};
-    if (cachedEtag) headers['If-None-Match'] = cachedEtag;
+    if (cachedEtag) headers["If-None-Match"] = cachedEtag;
 
-    const res = await fetch(url, { method: 'GET', headers });
+    const res = await fetch(url, { method: "GET", headers });
     if (res.status === 304) {
       // unchanged
       return;
@@ -59,7 +79,7 @@ export async function initRegistryRefresh(options?: { url?: string; onUpdated?: 
     }
 
     const newManifest = (await res.json()) as Manifest;
-    const etag = res.headers.get('ETag');
+    const etag = res.headers.get("ETag");
     currentManifest = newManifest;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newManifest));

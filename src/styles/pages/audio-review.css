@@ -1,0 +1,53 @@
+@import "../theme.css";
+
+/* Audio Review page */
+.audio-card {
+  padding: var(--space-md);
+}
+.audio-card h2 {
+  color: var(--color-primary);
+  font-size: var(--heading-2);
+  margin: 0 0 var(--space-sm) 0;
+}
+.audio-audio {
+  width: 100%;
+  border-radius: 8px;
+}
+.audio-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.transcript-pre {
+  background: rgba(7, 37, 89, 0.03);
+  padding: 12px;
+  border-radius: 8px;
+}
+.transcript-pre code,
+.transcript-pre pre {
+  color: var(--color-text);
+}
+.transcribe-btn {
+  background: linear-gradient(
+    180deg,
+    var(--color-primary),
+    var(--color-primary-600)
+  );
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .audio-actions {
+    flex-direction: column;
+  }
+  .audio-card {
+    padding: var(--space-lg);
+  }
+  .audio-audio {
+    max-width: 100%;
+  }
+}

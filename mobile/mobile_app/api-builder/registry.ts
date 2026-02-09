@@ -20,11 +20,24 @@ let currentManifest: Manifest = bakedManifest as Manifest;
 
 // attempt to hydrate from localStorage immediately (fast start)
 try {
-  const raw = (global as any).localStorage
-    ? (global as any).localStorage.getItem(STORAGE_KEY)
-    : null;
+  const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
-    currentManifest = JSON.parse(raw) as Manifest;
+    const cached = JSON.parse(raw) as Manifest;
+    if (
+      !cached ||
+      cached.schemaVersion !== (bakedManifest as Manifest).schemaVersion
+    ) {
+      currentManifest = bakedManifest as Manifest;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentManifest));
+      } catch {}
+    } else {
+      currentManifest = cached;
+    }
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentManifest));
+    } catch {}
   }
 } catch (e) {
   // ignore JSON errors and keep baked-in manifest

@@ -3,7 +3,6 @@ import {
   saveAccessToken,
   getRefreshToken,
 } from "./tokenStorage";
-import { refreshTokens } from "./sessionService";
 import { API_HOST } from "../../utils/axiosConfig";
 
 // Use configured API_HOST from mobile utils so requests from device use the correct public URL
@@ -60,6 +59,8 @@ async function fetchWithAuth(
   if (res.status === 401 && retry) {
     // try refresh
     try {
+      // dynamic import to avoid require/import cycle with sessionService
+      const { refreshTokens } = await import("./sessionService");
       const refreshed = await refreshTokens();
       if (refreshed?.accessToken) {
         setAccessToken(refreshed.accessToken);

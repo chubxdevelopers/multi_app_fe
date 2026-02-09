@@ -1,0 +1,65 @@
+@import "../theme.css";
+
+/* Select Company page styles - lighter, accessible and mobile-friendly */
+.select-card {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(249, 252, 255, 0.9), #ffffff);
+  box-shadow: var(--card-shadow);
+}
+.select-card .page-title {
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+.select-card .MuiPaper-root {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Ensure form controls are easier to tap */
+.select-card .MuiFormControl-root .MuiInputBase-root {
+  background: rgba(240, 246, 255, 0.8);
+  border-radius: 10px;
+}
+.select-card .MuiInputBase-root input,
+.select-card .MuiSelect-select {
+  padding: 14px 12px;
+}
+
+.select-card .btn,
+.select-card .MuiButton-root {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/* Subtle accent at top */
+.select-card::before {
+  content: "";
+  display: block;
+  height: 6px;
+  width: 100%;
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-600)
+  );
+  margin-bottom: var(--space-sm);
+}
+
+@media (max-width: 720px) {
+  .select-card {
+    padding: var(--space-lg);
+    margin: 0 12px;
+  }
+  .select-card .MuiFormControl-root {
+    margin-bottom: var(--space-md);
+  }
+  .select-card::before {
+    height: 4px;
+  }
+}

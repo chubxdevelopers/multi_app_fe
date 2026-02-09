@@ -109,7 +109,7 @@ export default function RoleMapping() {
       <Typography component="h1" variant="h5" gutterBottom>
         Role Feature Mapping
       </Typography>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper className="card fade-in" elevation={3} sx={{ p: 3 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -185,6 +185,7 @@ export default function RoleMapping() {
           </Box>
 
           <Button
+            className="btn"
             type="submit"
             fullWidth
             variant="contained"

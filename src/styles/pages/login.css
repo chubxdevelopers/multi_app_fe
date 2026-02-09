@@ -1,0 +1,20 @@
+@import "../theme.css";
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+.login-card {
+  max-width: 420px;
+  width: 100%;
+  padding: var(--space-md);
+}
+.login-card .page-title {
+  color: var(--color-primary);
+}
+@media (max-width: 600px) {
+  .login-card {
+    padding: var(--space-lg);
+  }
+}

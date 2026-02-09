@@ -1,0 +1,29 @@
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+// read the CF quick-tunnel hostname from an environment variable (if provided)
+const TUNNEL_HOSTNAME = process.env.CF_TUNNEL_HOSTNAME || "";
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: true,
+    port: 5173,
+
+    // If an env var is set, allow that exact host (string). If empty, allow nothing extra.
+    // Using an exact string keeps TypeScript happy.
+    allowedHosts: TUNNEL_HOSTNAME ? [TUNNEL_HOSTNAME] : [],
+
+    // If we have a tunnel hostname, use it as the origin so asset URLs are correct
+    origin: TUNNEL_HOSTNAME ? `https://${TUNNEL_HOSTNAME}` : undefined,
+
+    // Configure HMR: if TUNNEL_HOSTNAME exists, instruct client to use wss to that host
+    hmr: TUNNEL_HOSTNAME
+      ? { protocol: "wss", host: TUNNEL_HOSTNAME, clientPort: 443 }
+      : { protocol: "wss", clientPort: 443 },
+
+    cors: true,
+    // watch: { usePolling: true }, // enable only if HMR/websocket flakiness occurs
+  },
+});

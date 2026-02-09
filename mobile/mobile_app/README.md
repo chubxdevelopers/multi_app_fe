@@ -48,3 +48,8 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Notes for maintainers
+
+- `expo-av` is deprecated in SDK 54 and will be removed in future SDKs. Consider migrating to `expo-audio` and `expo-video` for audio/video functionality.
+- During development the app prefers a local backend (`10.0.2.2` on Android emulators). Set `extra.backendUrl` in `app.json` or the `BACKEND_URL` env var when running Metro if you need to point to a different host.

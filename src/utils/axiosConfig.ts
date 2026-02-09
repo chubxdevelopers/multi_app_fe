@@ -1,32 +1,17 @@
 import axios from "axios";
 
-// Determine API host for requests.
-// Priority:
-// 1. `import.meta.env.VITE_API_HOST` (set in Vite or environment)
-// 2. If running under Vite dev server (default port 5173), assume backend
-//    is at `http://localhost:4000` to avoid requests going to the dev server.
-// 3. Otherwise use the current page origin.
-let configuredHost: string | null = null;
-try {
-  // Vite exposes env via import.meta.env
-  // @ts-ignore
-  configuredHost = (import.meta && import.meta.env && import.meta.env.VITE_API_HOST) || null;
-} catch (e) {
-  configuredHost = null;
+// Get API base URL from environment variable
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "VITE_API_BASE_URL is not defined. Please set it in your environment configuration.",
+  );
 }
 
-const forcedOrigin = (() => {
-  if (configuredHost) return configuredHost;
-  if (typeof window !== "undefined") {
-    // If running the frontend via Vite (default port 5173), default API to localhost:4000
-    const port = window.location.port;
-    if (port === "5173") return "http://localhost:4000";
-    return window.location.origin;
-  }
-  return "http://localhost:4000";
-})();
-
-export const API_HOST = ("" + forcedOrigin).replace(/\/$/, "");
+// Remove trailing slash for consistency
+export const API_HOST = API_BASE_URL.replace(/\/$/, "");
+console.debug("API_HOST from environment ->", API_HOST);
 
 // Extract company and app slugs from the URL path
 function extractSlugs() {
@@ -73,13 +58,13 @@ instance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
 instance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       const { company, app } = extractSlugs();
@@ -91,7 +76,7 @@ instance.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default instance;
